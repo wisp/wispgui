@@ -1,0 +1,2 @@
+class GuiError (Exception):
+    pass
