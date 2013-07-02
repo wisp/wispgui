@@ -1,5 +1,4 @@
-import Queue
-import datetime.datetime
+from collections import OrderedDict
 
 class Tag:
     tagid = None
@@ -11,3 +10,10 @@ class Tag:
 
     def appear (self, reader):
         self.readers[reader] = datetime.utcnow()
+
+
+class TagCollection (OrderedDict):
+    _tags = {}
+
+    def __init__ (self):
+        super(TagCollection, self).__init__()
