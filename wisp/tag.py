@@ -2,9 +2,9 @@ import Queue
 import datetime.datetime
 
 class Tag:
-    self.tagid = None
-    self.epc = None
-    self.readers = {}
+    tagid = None
+    epc = None
+    readers = {}
 
     def __init__ (self):
         pass
