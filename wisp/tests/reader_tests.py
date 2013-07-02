@@ -9,4 +9,4 @@ def teardown ():
     pass
 
 def test_basic ():
-    wisp.reader.Reader()
+    reader = wisp.reader.Reader()
