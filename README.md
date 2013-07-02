@@ -17,6 +17,11 @@ on which this project depends:
 
     $ pip -r py-requirements.txt
 
+To run the GUI application, you must also have
+[PyQt4](http://www.riverbankcomputing.com/software/pyqt/intro) installed.  Your
+operating system probably has a package for it.  As of July 2013, there is an
+Ubuntu package called `python-qt4` and a MacPorts package called `py27-pyqt4`.
+
 Running
 -------
 
