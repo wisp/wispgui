@@ -2,15 +2,9 @@
 #
 # Wrapper script for wisp.gui.
 #
-# Call like so:
-#  $ /path/to/wispgui
-# Or to override the default choice of Python executable:
-#  $ PYTHON=/path/to/other/python /path/to/wispgui
-# e.g., for a Mac with Python 2.7 installed via MacPorts,
-#  $ PYTHON=/opt/local/bin/python2.7 /path/to/wispgui
-#
 
-# default Python interpreter is 'python' by default
+# default Python interpreter is 'python' from your $PATH; set the $PYTHON
+# environment variable to override it
 : ${PYTHON:=python}
 export PYTHONPATH="`dirname $0`/..:$PYTHONPATH"
 
