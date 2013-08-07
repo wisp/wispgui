@@ -1,5 +1,6 @@
 from collections import OrderedDict
-from exceptions import ReaderError
+from wisp.exceptions import ReaderError
+
 import llrp_proto as llrp
 
 ################################################################################
