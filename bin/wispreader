@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# Wrapper script for wisp.reader
+#
+
+# default Python interpreter is 'python' from your $PATH; set the $PYTHON
+# environment variable to override it
+: ${PYTHON:=python}
+export PYTHONPATH="`dirname $0`/..:$PYTHONPATH"
+
+exec "$PYTHON" -m wisp.reader ${1+"$@"}
