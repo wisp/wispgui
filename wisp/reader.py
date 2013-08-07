@@ -1,7 +1,11 @@
+import logging
+import sys
 from collections import OrderedDict
 from wisp.exceptions import ReaderError
-
 import llrp_proto as llrp
+
+logger = logging.getLogger('wisp.reader')
+logger.addHandler(logging.NullHandler())
 
 ################################################################################
 
@@ -37,7 +41,21 @@ class ImpinjReader (Reader):
 
     def inventory (self, cycles=1):
         """Run N cycles of inventory"""
-        return ()
+        if not self.connected:
+            raise ReaderError('Not connected')
+        c = self.connection
+
+        c.delete_all_rospec()
+        inventory_rospec = LLRPROSpec(1)
+        inventory_rospec.add(c)
+        inventory_rospec.enable(c)
+        inventory_rospec.start(c)
+        time.sleep(1)
+        inventory_rospec.stop(c)
+        inventory_rospec.disable(c)
+        inventory_rospec.delete(c)
+
+        return (1, 2, 3)
 
     def connect (self):
         try:
@@ -76,29 +94,63 @@ class ReaderCollection (OrderedDict):
 ################################################################################
 
 def ping (args):
-    host = args.host
-    reader = ImpinjReader(host)
-    try:
-        print 'Connecting to {}...'.format(host)
-        reader.connect()
-        print 'Connected.'
-        print 'Disconnecting...'
-        reader.disconnect()
-        print 'Disconnected.'
-    except ReaderError, err:
-        print 'Reader error: %s'
+    for host in args.host:
+        reader = ImpinjReader(host)
+        try:
+            logger.info('Connecting to {}...'.format(host))
+            reader.connect()
+            logger.info('Connected.')
+            logger.info('Disconnecting...')
+            reader.disconnect()
+            logger.info('Disconnected.')
+        except ReaderError, err:
+            logger.error('Reader error: %s')
 
 def inventory (args):
-    raise NotImplementedError()
+    for host in args.host:
+        reader = ImpinjReader(host)
+        try:
+            logger.info('Connecting to {}...'.format(host))
+            reader.connect()
+            logger.info('Connected.')
+
+            print reader.inventory()
+
+            logger.info('Disconnecting...')
+            reader.disconnect()
+            logger.info('Disconnected.')
+        except ReaderError, err:
+            logger.error('Reader error: %s')
 
 if __name__ == '__main__':
     import argparse
+
     parser = argparse.ArgumentParser(description='RFID reader')
-    parser.add_argument('host', help='Hostname or IP address of reader')
+    parser.add_argument('-d', '--debug', action='store_true',
+        help='Show debugging output')
+    parser.add_argument('-l', '--logfile', metavar='FILE',
+        type=argparse.FileType('w'), default=sys.stderr,
+        help='Write log to FILE')
     subparsers = parser.add_subparsers(help='sub-command help')
+
     parser_ping = subparsers.add_parser('ping', help='ping help')
+    parser_ping.add_argument('host', nargs='+',
+        help='Hostname or IP address of reader')
     parser_ping.set_defaults(func=ping)
+
     parser_inventory = subparsers.add_parser('inventory', help='inventory help')
+    parser_inventory.add_argument('host', nargs='+',
+        help='Hostname or IP address of reader')
     parser_inventory.set_defaults(func=inventory)
+
     args = parser.parse_args()
+
+    logh = logging.StreamHandler(stream=args.logfile)
+    logger.setLevel(args.debug and logging.DEBUG or logging.INFO)
+    logger.addHandler(logh)
+
+    l = logging.getLogger
+    l('llrpc').setLevel(l('wisp.reader').getEffectiveLevel())
+
+    # dispatch the actual command
     args.func(args)
