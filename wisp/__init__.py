@@ -1,1 +1,1 @@
-__all__ = ('tag', 'reader')
+__all__ = ('tag', 'reader', 'gui', 'exceptions')
