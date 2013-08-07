@@ -149,6 +149,7 @@ if __name__ == '__main__':
     logger.setLevel(args.debug and logging.DEBUG or logging.INFO)
     logger.addHandler(logh)
 
+    # set llrp_proto's loglevel to match ours
     l = logging.getLogger
     l('llrpc').setLevel(l('wisp.reader').getEffectiveLevel())
 
