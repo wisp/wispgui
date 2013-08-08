@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging
 import sys
 from collections import OrderedDict
@@ -61,7 +62,7 @@ class ImpinjReader (Reader):
         try:
             self.connection = llrp.LLRPdConnection(self.hostname)
             self.connected = True
-        except llrp.LLRPResponseError, ret:
+        except llrp.LLRPResponseError as ret:
             raise ReaderError(ret)
 
     def disconnect (self):
@@ -103,7 +104,7 @@ def ping (args):
             logger.info('Disconnecting...')
             reader.disconnect()
             logger.info('Disconnected.')
-        except ReaderError, err:
+        except ReaderError as err:
             logger.error('Reader error: %s')
 
 def inventory (args):
@@ -114,12 +115,12 @@ def inventory (args):
             reader.connect()
             logger.info('Connected.')
 
-            print reader.inventory()
+            print(reader.inventory())
 
             logger.info('Disconnecting...')
             reader.disconnect()
             logger.info('Disconnected.')
-        except ReaderError, err:
+        except ReaderError as err:
             logger.error('Reader error: %s')
 
 if __name__ == '__main__':
