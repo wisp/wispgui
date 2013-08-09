@@ -29,16 +29,24 @@ class Reader (object):
         raise NotImplementedError("Abstract reader; use a subclass from "
                 "wisp.reader instead.")
 
+    def disconnect (self):
+        raise NotImplementedError("Abstract reader; use a subclass from "
+                "wisp.reader instead.")
+
+
 ################################################################################
 
 class ImpinjReader (Reader):
     connection = None
+    timeout = None
 
-    def __init__ (self, hostname):
+    def __init__ (self, hostname, timeout=None):
         super(ImpinjReader, self).__init__()
         self.reader_type = Reader.READER_IMPINJ
         self.hostname = hostname
         self.connection = None
+        if timeout:
+            self.timeout = timeout
 
     def inventory (self, cycles=1):
         """Run N cycles of inventory"""
@@ -60,7 +68,8 @@ class ImpinjReader (Reader):
 
     def connect (self):
         try:
-            self.connection = llrp.LLRPdConnection(self.hostname)
+            self.connection = llrp.LLRPdConnection(self.hostname,
+                timeout=self.timeout)
             self.connected = True
         except llrp.LLRPResponseError as ret:
             raise ReaderError(ret)
@@ -96,7 +105,7 @@ class ReaderCollection (OrderedDict):
 
 def ping (args):
     for host in args.host:
-        reader = ImpinjReader(host)
+        reader = ImpinjReader(host, timeout=args.timeout)
         try:
             logger.info('Connecting to {}...'.format(host))
             reader.connect()
@@ -109,7 +118,7 @@ def ping (args):
 
 def inventory (args):
     for host in args.host:
-        reader = ImpinjReader(host)
+        reader = ImpinjReader(host, timeout=args.timeout)
         try:
             logger.info('Connecting to {}...'.format(host))
             reader.connect()
@@ -132,6 +141,8 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--logfile', metavar='FILE',
         type=argparse.FileType('w'), default=sys.stderr,
         help='Write log to FILE')
+    parser.add_argument('--timeout', metavar='SECONDS', type=int, default=10,
+        help='Timeout for socket operations')
     subparsers = parser.add_subparsers(help='sub-command help')
 
     parser_ping = subparsers.add_parser('ping', help='ping help')
@@ -148,6 +159,8 @@ if __name__ == '__main__':
 
     logh = logging.StreamHandler(stream=args.logfile)
     logger.setLevel(args.debug and logging.DEBUG or logging.INFO)
+    level = logging.getLevelName(logger.getEffectiveLevel())
+    logger.error('log level = {}'.format(level))
     logger.addHandler(logh)
 
     # set llrp_proto's loglevel to match ours
