@@ -1,6 +1,7 @@
 from __future__ import print_function
 import logging
 import sys
+import time
 from collections import OrderedDict
 from wisp.exceptions import ReaderError
 import llrp_proto as llrp
@@ -33,6 +34,10 @@ class Reader (object):
         raise NotImplementedError("Abstract reader; use a subclass from "
                 "wisp.reader instead.")
 
+    def reset (self):
+        raise NotImplementedError("Abstract reader; use a subclass from "
+                "wisp.reader instead.")
+
 
 ################################################################################
 
@@ -55,16 +60,24 @@ class ImpinjReader (Reader):
         c = self.connection
 
         c.delete_all_rospec()
-        inventory_rospec = LLRPROSpec(1)
+        inventory_rospec = llrp.LLRPROSpec(1)
         inventory_rospec.add(c)
         inventory_rospec.enable(c)
         inventory_rospec.start(c)
-        time.sleep(1)
+        # XXX what to do here?
         inventory_rospec.stop(c)
         inventory_rospec.disable(c)
         inventory_rospec.delete(c)
 
         return (1, 2, 3)
+
+    def reset (self):
+        try:
+            self.connect()
+            self.connection.delete_all_rospec()
+            self.disconnect()
+        except llrp.LLRPResponseError as ret:
+            raise ReaderError(ret)
 
     def connect (self):
         try:
@@ -95,6 +108,11 @@ class GnuRadioReader (Reader):
 
     def disconnect (self):
         self.connected = False
+
+    def reset ():
+        self.connect()
+        # XXX reset reader state
+        self.disconnect()
 
 class ReaderCollection (OrderedDict):
     """A collection of readers, to be operated on collectively."""
@@ -132,15 +150,28 @@ def inventory (args):
         except ReaderError as err:
             logger.error('Reader error: %s')
 
+def reset (args):
+    for host in args.host:
+        reader = ImpinjReader(host, timeout=args.timeout)
+        try:
+            logger.info('Connecting to {}...'.format(host))
+            reader.connect()
+            logger.info('Connected.')
+
+            reader.reset()
+
+            logger.info('Disconnecting...')
+            reader.disconnect()
+            logger.info('Disconnected.')
+        except ReaderError as err:
+            logger.error('Reader error: {}'.format(err))
+
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='RFID reader')
     parser.add_argument('-d', '--debug', action='store_true',
         help='Show debugging output')
-    parser.add_argument('-l', '--logfile', metavar='FILE',
-        type=argparse.FileType('w'), default=sys.stderr,
-        help='Write log to FILE')
     parser.add_argument('--timeout', metavar='SECONDS', type=int, default=10,
         help='Timeout for socket operations')
     subparsers = parser.add_subparsers(help='sub-command help')
@@ -155,17 +186,14 @@ if __name__ == '__main__':
         help='Hostname or IP address of reader')
     parser_inventory.set_defaults(func=inventory)
 
+    parser_reset = subparsers.add_parser('reset', help='reset help')
+    parser_reset.add_argument('host', nargs='+',
+        help='Hostname or IP address of reader')
+    parser_reset.set_defaults(func=reset)
+
     args = parser.parse_args()
 
-    logh = logging.StreamHandler(stream=args.logfile)
-    logger.setLevel(args.debug and logging.DEBUG or logging.INFO)
-    level = logging.getLevelName(logger.getEffectiveLevel())
-    logger.error('log level = {}'.format(level))
-    logger.addHandler(logh)
-
-    # set llrp_proto's loglevel to match ours
-    l = logging.getLogger
-    l('llrpc').setLevel(l('wisp.reader').getEffectiveLevel())
+    logging.basicConfig(level=args.debug and logging.DEBUG or logging.INFO)
 
     # dispatch the actual command
     args.func(args)
